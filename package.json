@@ -1,0 +1,26 @@
+{
+  "name": "lol-inting-yasuo-counter",
+  "version": "1.0.0",
+  "description": "Do you have inting yasuo in your team? Want to make him int more? Try this cli app!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Artiu/lol-inting-yasuo-counter.git"
+  },
+  "keywords": [
+    "inting",
+    "yasuo"
+  ],
+  "author": "Artiu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Artiu/lol-inting-yasuo-counter/issues"
+  },
+  "homepage": "https://github.com/Artiu/lol-inting-yasuo-counter#readme",
+  "dependencies": {
+    "robotjs": "^0.6.0"
+  }
+}
