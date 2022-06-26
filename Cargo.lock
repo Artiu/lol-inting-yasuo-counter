@@ -356,15 +356,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keyboard-test"
-version = "0.1.0"
-dependencies = [
- "enigo",
- "reqwest",
- "serde",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -383,6 +374,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "lol-inting-yasuo-counter"
+version = "0.1.0"
+dependencies = [
+ "enigo",
+ "reqwest",
+ "serde",
 ]
 
 [[package]]
