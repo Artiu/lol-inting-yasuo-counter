@@ -24,8 +24,7 @@ fn get_league_live_data<T: for<'de> serde::Deserialize<'de>>(path: &str) -> T {
     loop {
         return match client.get(&url).send() {
             Ok(res) => res.json().unwrap(),
-            Err(e) => {
-                eprintln!("{}", e);
+            _ => {
                 println!("Problem with League of Legends live data connection! Next reconnection attempt will be in 30 seconds");
                 std::thread::sleep(std::time::Duration::new(30, 0));
                 continue;
