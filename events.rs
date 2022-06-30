@@ -1,66 +1,165 @@
+use std::collections::{HashMap, HashSet};
+
 use serde::Deserialize;
 
-use crate::actions;
+use crate::{action, requests};
 
-#[derive(Deserialize)]
-struct Scores {
-    deaths: u8,
-}
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-struct Champion {
+pub struct Player {
     champion_name: String,
     summoner_name: String,
-    scores: Scores,
 }
 
-fn get_league_live_data<T: for<'de> serde::Deserialize<'de>>(path: &str) -> T {
-    let url = format!("{}{}", "https://127.0.0.1:2999/liveclientdata", path);
-    let client = reqwest::blocking::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .unwrap();
-    loop {
-        return match client.get(&url).send() {
-            Ok(res) => res.json().unwrap(),
-            _ => {
-                println!("Problem with League of Legends live data connection! Next reconnection attempt will be in 30 seconds");
-                std::thread::sleep(std::time::Duration::new(30, 0));
-                continue;
+pub type PlayerList = Vec<Player>;
+
+pub trait PlayerListActions {
+    fn get() -> Option<PlayerList>;
+    fn pick_players_to_observe(&self) -> Self;
+}
+
+impl PlayerListActions for PlayerList {
+    fn get() -> Option<Self> {
+        requests::get_league_live_data::<Self>("/playerlist")
+    }
+    fn pick_players_to_observe(&self) -> Self {
+        for i in 0..self.len() {
+            let player = &self[i];
+            println!(
+                "{}.Nickname: {}, Champion: {}",
+                i + 1,
+                player.summoner_name,
+                player.champion_name
+            );
+        }
+        println!("Pick players to make action on: ");
+        'main_loop: loop {
+            let mut user_input = String::new();
+            std::io::stdin()
+                .read_line(&mut user_input)
+                .expect("Problem with reading user input!");
+
+            let splited_input: HashSet<&str> = user_input.trim().split(" ").collect();
+            let mut players: PlayerList = Vec::new();
+            for input_part in splited_input {
+                match input_part.parse::<usize>() {
+                    Err(_) => {
+                        println!("Incorrect input!");
+                        continue 'main_loop;
+                    }
+                    Ok(parsed) => {
+                        if parsed < 1 || parsed > self.len() {
+                            println!("One of provided players doesn't exist");
+                            continue 'main_loop;
+                        }
+                        players.push(self[parsed - 1].clone())
+                    }
+                };
             }
-        };
+            return players;
+        }
     }
 }
 
-fn listen_on_champion_death(name: &str) {
-    let name_string = name.to_string();
-    let champions: Vec<Champion> = get_league_live_data("/playerlist");
-    let champion_player = match champions
-        .iter()
-        .find(|champion| champion.champion_name == name_string)
-    {
-        Some(champion) => champion,
-        None => {
-            println!("You don't have {} in game!", name_string);
-            return;
-        }
+fn get_events() -> Option<Vec<HashMap<String, String>>> {
+    requests::get_league_live_data("/eventdata")
+}
+
+#[derive(PartialEq)]
+enum Event {
+    Kill,
+    Death,
+}
+
+pub struct EventToListen {
+    player: Player,
+    event: Event,
+    action: action::Action,
+}
+
+pub type EventsToListen = Vec<EventToListen>;
+
+pub trait EventsToListenActions {
+    fn create_events_for_players(&mut self, players: PlayerList);
+}
+
+impl EventsToListenActions for EventsToListen {
+    fn create_events_for_players(&mut self, players: PlayerList) {
+        players.iter().for_each(|player| {
+            println!(
+                "Pick event for {} ({}): ",
+                player.summoner_name, player.champion_name
+            );
+            println!("1. Death");
+            println!("2. Kill");
+            let mut user_choice = String::new();
+            let user_event;
+            loop {
+                std::io::stdin().read_line(&mut user_choice).unwrap();
+                match &*(user_choice.trim()) {
+                    "1" => user_event = Event::Death,
+                    "2" => user_event = Event::Kill,
+                    _ => {
+                        println!("Incorrect option!");
+                        continue;
+                    }
+                }
+                break;
+            }
+            println!("Pick action: ");
+            println!("1. Show mastery emote");
+            println!("2. Show like emote");
+            let user_action;
+            loop {
+                std::io::stdin().read_line(&mut user_choice).unwrap();
+                match &*(user_choice.trim()) {
+                    "1" => user_action = action::Action::MasteryEmote,
+                    "2" => user_action = action::Action::LikeEmote,
+                    _ => {
+                        println!("Incorrect option!");
+                        continue;
+                    }
+                }
+                break;
+            }
+            self.push(EventToListen {
+                player: player.clone(),
+                event: user_event,
+                action: user_action,
+            });
+        });
+    }
+}
+
+pub fn listen(events_to_listen: Vec<EventToListen>) {
+    let events = match get_events() {
+        Some(events) => events,
+        None => return,
     };
-    let mut champion_deaths = champion_player.scores.deaths;
+    let mut last_event_id = events.len();
     loop {
-        let url = format!(
-            "{}{}",
-            "/playerscores?summonerName=", champion_player.summoner_name
-        );
-        let champion_stats: Scores = get_league_live_data(&url);
-        if champion_stats.deaths > champion_deaths {
-            actions::show_mastery_emote();
-            champion_deaths = champion_stats.deaths;
-        }
-        std::thread::sleep(std::time::Duration::new(1, 0));
-    }
-}
+        let events = match get_events() {
+            Some(events) => events,
+            None => break,
+        };
 
-pub fn listen() {
-    listen_on_champion_death("Yasuo");
+        if last_event_id < events.len() {
+            last_event_id = events.len();
+            for event in &events[last_event_id..events.len()] {
+                let name = event.get(&"EventName".to_string()).unwrap();
+                if name != "ChampionKill" {
+                    continue;
+                }
+                let dead_player_name = event.get("VictimName").unwrap();
+                let killer_player_name = event.get("KillerName").unwrap();
+                let event = events_to_listen.iter().find(|e| {
+                    (e.player.summoner_name == *dead_player_name && e.event == Event::Death)
+                        || (e.player.summoner_name == *killer_player_name && e.event == Event::Kill)
+                });
+                if let Some(e) = event {
+                    e.action.make();
+                }
+            }
+        }
+    }
 }
