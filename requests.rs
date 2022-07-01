@@ -35,9 +35,14 @@ pub fn get_league_live_data<T: for<'de> serde::Deserialize<'de>>(path: &str) -> 
         .unwrap();
     match client.get(url).send() {
         Err(_) => None,
-        Ok(res) => res.json::<T>().ok().or_else(|| {
-            println!("Parsing JSON error!");
-            None
-        }),
+        Ok(res) => {
+            if !res.status().is_success() {
+                return None;
+            }
+            return res.json::<T>().ok().or_else(|| {
+                println!("Parsing JSON error!");
+                None
+            });
+        }
     }
 }

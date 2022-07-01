@@ -8,7 +8,7 @@ mod requests;
 
 pub fn main() {
     loop {
-        println!("Waiting for match...");
+        println!("Waiting for a match...");
         let players;
         loop {
             players = match PlayerList::get() {
