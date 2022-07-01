@@ -4,7 +4,6 @@ use enigo::*;
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Action {
     pub name: String,
     key: char,
