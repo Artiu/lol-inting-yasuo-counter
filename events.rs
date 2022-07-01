@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::{action, requests};
 
@@ -61,8 +62,17 @@ impl PlayerListActions for PlayerList {
     }
 }
 
-fn get_events() -> Option<Vec<HashMap<String, String>>> {
-    requests::get_league_live_data("/eventdata")
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct EventResponse {
+    events: Vec<HashMap<String, Value>>,
+}
+
+fn get_events() -> Option<Vec<HashMap<String, Value>>> {
+    match requests::get_league_live_data::<EventResponse>("/eventdata") {
+        Some(e) => Some(e.events),
+        None => None,
+    }
 }
 
 #[derive(PartialEq)]
@@ -133,34 +143,40 @@ impl EventsToListenActions for EventsToListen {
 }
 
 pub fn listen(events_to_listen: Vec<EventToListen>) {
-    let events = match get_events() {
+    let mut events = match get_events() {
         Some(events) => events,
         None => return,
     };
-    let mut last_event_id = events.len();
+    let mut last_event_length = events.len();
     loop {
-        let events = match get_events() {
+        events = match get_events() {
             Some(events) => events,
             None => break,
         };
 
-        if last_event_id < events.len() {
-            last_event_id = events.len();
-            for event in &events[last_event_id..events.len()] {
-                let name = event.get(&"EventName".to_string()).unwrap();
+        if last_event_length < events.len() {
+            for event in &events[last_event_length..events.len()] {
+                let name = event
+                    .get(&"EventName".to_string())
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
                 if name != "ChampionKill" {
                     continue;
                 }
-                let dead_player_name = event.get("VictimName").unwrap();
-                let killer_player_name = event.get("KillerName").unwrap();
+                let dead_player_name = event.get("VictimName").unwrap().as_str().unwrap();
+                let killer_player_name = event.get("KillerName").unwrap().as_str().unwrap();
                 let event = events_to_listen.iter().find(|e| {
-                    (e.player.summoner_name == *dead_player_name && e.event == Event::Death)
-                        || (e.player.summoner_name == *killer_player_name && e.event == Event::Kill)
+                    (e.player.summoner_name.as_str() == dead_player_name && e.event == Event::Death)
+                        || (e.player.summoner_name.as_str() == killer_player_name
+                            && e.event == Event::Kill)
                 });
                 if let Some(e) = event {
                     e.action.make();
                 }
             }
+            last_event_length = events.len();
         }
+        std::thread::sleep(std::time::Duration::new(1, 0));
     }
 }
