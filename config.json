@@ -1,0 +1,13 @@
+{
+    "actions": [
+        {
+            "name": "mastery emote",
+            "key": "6",
+            "with_ctrl": true
+        },
+        {
+            "name": "random emote",
+            "key": "t"
+        }
+    ]
+}

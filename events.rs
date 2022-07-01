@@ -6,7 +6,10 @@ use std::{
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{action, requests};
+use crate::{
+    action::{self, Action},
+    requests,
+};
 
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -99,11 +102,11 @@ pub struct EventToListen {
 pub type EventsToListen = Vec<EventToListen>;
 
 pub trait EventsToListenActions {
-    fn create_events_for_players(&mut self, players: PlayerList);
+    fn create_events_for_players(&mut self, players: PlayerList, actions: &Vec<Action>);
 }
 
 impl EventsToListenActions for EventsToListen {
-    fn create_events_for_players(&mut self, players: PlayerList) {
+    fn create_events_for_players(&mut self, players: PlayerList, actions: &Vec<Action>) {
         players.iter().for_each(|player| {
             println!(
                 "Pick event for {} ({}): ",
@@ -126,26 +129,32 @@ impl EventsToListenActions for EventsToListen {
                 break;
             }
             println!("Pick action: ");
-            println!("1. Show mastery emote");
-            println!("2. Show random emote from wheel");
+            for i in 0..actions.len() {
+                println!("{}. {}", i + 1, actions[i].name);
+            }
             let user_action;
             loop {
                 let mut user_choice = String::new();
                 std::io::stdin().read_line(&mut user_choice).unwrap();
-                match user_choice.trim() {
-                    "1" => user_action = action::Action::MasteryEmote,
-                    "2" => user_action = action::Action::RandomEmote,
-                    _ => {
+                match user_choice.trim().parse::<usize>() {
+                    Err(_) => {
                         println!("Incorrect option!");
                         continue;
                     }
+                    Ok(choice) => match actions.get(choice - 1) {
+                        None => {
+                            println!("Action doesn't exist!");
+                            continue;
+                        }
+                        Some(action) => user_action = action,
+                    },
                 }
                 break;
             }
             self.push(EventToListen {
                 player: player.clone(),
                 event: user_event,
-                action: user_action,
+                action: user_action.clone(),
             });
         });
     }
