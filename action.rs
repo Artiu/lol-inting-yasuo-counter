@@ -5,14 +5,14 @@ use enigo::*;
 #[derive(Clone, Debug)]
 pub enum Action {
     MasteryEmote,
-    LikeEmote,
+    RandomEmote,
 }
 
 impl Display for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             Action::MasteryEmote => write!(f, "mastery emote"),
-            Action::LikeEmote => write!(f, "like emote"),
+            Action::RandomEmote => write!(f, "random emote"),
         }
     }
 }
@@ -25,12 +25,11 @@ impl Action {
                 enigo.key_down(Key::Control);
                 enigo.key_click(Key::Layout('6'));
                 enigo.key_up(Key::Control);
-                println!("Showed mastery emote!");
             }
-            Action::LikeEmote => {
+            Action::RandomEmote => {
                 enigo.key_click(Key::Layout('T'));
-                println!("Showed like emote!");
             }
         }
+        println!("Showed {}!", self);
     }
 }

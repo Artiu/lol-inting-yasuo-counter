@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -75,10 +78,16 @@ fn get_events() -> Option<Vec<HashMap<String, Value>>> {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum Event {
     Kill,
     Death,
+}
+
+impl Display for Event {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub struct EventToListen {
@@ -118,14 +127,14 @@ impl EventsToListenActions for EventsToListen {
             }
             println!("Pick action: ");
             println!("1. Show mastery emote");
-            println!("2. Show like emote");
+            println!("2. Show random emote from wheel");
             let user_action;
             loop {
                 let mut user_choice = String::new();
                 std::io::stdin().read_line(&mut user_choice).unwrap();
                 match user_choice.trim() {
                     "1" => user_action = action::Action::MasteryEmote,
-                    "2" => user_action = action::Action::LikeEmote,
+                    "2" => user_action = action::Action::RandomEmote,
                     _ => {
                         println!("Incorrect option!");
                         continue;
@@ -148,6 +157,7 @@ pub fn listen(events_to_listen: Vec<EventToListen>) {
         None => return,
     };
     let mut last_event_length = events.len();
+    println!("Listening on events...");
     loop {
         events = match get_events() {
             Some(events) => events,
@@ -156,7 +166,7 @@ pub fn listen(events_to_listen: Vec<EventToListen>) {
 
         if last_event_length < events.len() {
             for event in &events[last_event_length..events.len()] {
-                let name = event.get(&"EventName".to_string()).unwrap();
+                let name = event.get("EventName").unwrap();
                 if name != "ChampionKill" {
                     continue;
                 }
@@ -168,6 +178,10 @@ pub fn listen(events_to_listen: Vec<EventToListen>) {
                             && e.event == Event::Kill)
                 });
                 if let Some(e) = event {
+                    println!(
+                        "{} ({}): {}",
+                        e.player.summoner_name, e.player.champion_name, e.event
+                    );
                     e.action.make();
                 }
             }
