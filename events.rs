@@ -92,11 +92,11 @@ impl EventsToListenActions for EventsToListen {
             );
             println!("1. Death");
             println!("2. Kill");
-            let mut user_choice = String::new();
             let user_event;
             loop {
+                let mut user_choice = String::new();
                 std::io::stdin().read_line(&mut user_choice).unwrap();
-                match &*(user_choice.trim()) {
+                match user_choice.trim() {
                     "1" => user_event = Event::Death,
                     "2" => user_event = Event::Kill,
                     _ => {
@@ -111,8 +111,9 @@ impl EventsToListenActions for EventsToListen {
             println!("2. Show like emote");
             let user_action;
             loop {
+                let mut user_choice = String::new();
                 std::io::stdin().read_line(&mut user_choice).unwrap();
-                match &*(user_choice.trim()) {
+                match user_choice.trim() {
                     "1" => user_action = action::Action::MasteryEmote,
                     "2" => user_action = action::Action::LikeEmote,
                     _ => {
