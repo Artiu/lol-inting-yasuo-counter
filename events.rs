@@ -156,16 +156,12 @@ pub fn listen(events_to_listen: Vec<EventToListen>) {
 
         if last_event_length < events.len() {
             for event in &events[last_event_length..events.len()] {
-                let name = event
-                    .get(&"EventName".to_string())
-                    .unwrap()
-                    .as_str()
-                    .unwrap();
+                let name = event.get(&"EventName".to_string()).unwrap();
                 if name != "ChampionKill" {
                     continue;
                 }
-                let dead_player_name = event.get("VictimName").unwrap().as_str().unwrap();
-                let killer_player_name = event.get("KillerName").unwrap().as_str().unwrap();
+                let dead_player_name = event.get("VictimName").unwrap();
+                let killer_player_name = event.get("KillerName").unwrap();
                 let event = events_to_listen.iter().find(|e| {
                     (e.player.summoner_name.as_str() == dead_player_name && e.event == Event::Death)
                         || (e.player.summoner_name.as_str() == killer_player_name
