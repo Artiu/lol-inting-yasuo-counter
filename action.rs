@@ -33,18 +33,11 @@ impl Action {
 }
 
 fn get_default_actions() -> Vec<Action> {
-    vec![
-        Action {
-            name: "mastery emote".to_string(),
-            key: '6',
-            with_ctrl: true,
-        },
-        Action {
-            name: "random emote".to_string(),
-            key: 'T',
-            with_ctrl: false,
-        },
-    ]
+    vec![Action {
+        name: "mastery emote".to_string(),
+        key: '6',
+        with_ctrl: true,
+    }]
 }
 
 pub fn get_actions() -> Vec<Action> {
