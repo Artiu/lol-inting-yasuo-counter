@@ -68,19 +68,6 @@ impl PlayerListActions for PlayerList {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct EventResponse {
-    events: Vec<HashMap<String, Value>>,
-}
-
-fn get_events() -> Option<Vec<HashMap<String, Value>>> {
-    match requests::get_league_live_data::<EventResponse>("/eventdata") {
-        Some(e) => Some(e.events),
-        None => None,
-    }
-}
-
 #[derive(PartialEq, Debug)]
 enum Event {
     Kill,
@@ -157,6 +144,19 @@ impl EventsToListenActions for EventsToListen {
                 action: user_action.clone(),
             });
         });
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct EventResponse {
+    events: Vec<HashMap<String, Value>>,
+}
+
+fn get_events() -> Option<Vec<HashMap<String, Value>>> {
+    match requests::get_league_live_data::<EventResponse>("/eventdata") {
+        Some(e) => Some(e.events),
+        None => None,
     }
 }
 
